@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>COM Phoenix Student Virtual Assistant | University of Arizona</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<style>
+:root{
+  --red:#AB0520;--red-d:#89041a;--blue:#0C234B;--blue-2:#1E5288;
+  --bg:#F6F7F9;--surface:#fff;--text:#1d2530;--muted:#6b747d;--line:#e4e7ec;--soft:#eef1f5;
+  --shadow:0 10px 30px rgba(12,35,75,.10);
+}
+body.dark{--bg:#0f1218;--surface:#171b23;--text:#e9ecf1;--muted:#98a2b0;--line:#272d38;--soft:#1f2530;--shadow:0 10px 30px rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+/* ---------- sidebar ---------- */
+.sidebar{width:280px;flex-shrink:0;background:linear-gradient(180deg,#0C234B,#091a38);color:#fff;display:flex;flex-direction:column;padding:18px 14px;transition:margin .3s ease,transform .3s ease;z-index:30}
+.sidebar.closed{margin-left:-280px}
+.brand{display:flex;align-items:center;gap:11px;padding:2px 6px 18px}
+.brand img{height:40px}
+.brand b{display:block;font-size:.92rem;line-height:1.15}
+.brand small{opacity:.65;font-size:.72rem}
+.new{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--red);color:#fff;border:0;border-radius:12px;padding:12px;font-weight:600;font-size:.92rem;cursor:pointer;box-shadow:0 6px 16px rgba(171,5,32,.35);transition:.2s}
+.new:hover{background:var(--red-d);transform:translateY(-1px)}
+.sidebar h4{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;opacity:.55;margin:22px 8px 8px;font-weight:600}
+.hist{flex:1;overflow-y:auto;min-height:0}
+.hist button{display:block;width:100%;text-align:left;background:none;border:0;color:#e8edf6;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.15s}
+.hist button:hover{background:rgba(255,255,255,.09)}
+.hist button.active{background:rgba(255,255,255,.16)}
+.empty{font-size:.8rem;opacity:.5;padding:8px 10px}
+.foot{border-top:1px solid rgba(255,255,255,.12);padding-top:12px;margin-top:10px;font-size:.76rem}
+.foot a{display:block;color:#cfd8e8;text-decoration:none;padding:5px 8px;border-radius:6px}
+.foot a:hover{background:rgba(255,255,255,.09);color:#fff}
+/* ---------- main ---------- */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.top{display:flex;align-items:center;gap:8px;padding:12px 18px;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);position:sticky;top:0;z-index:10}
+.ib{background:none;border:0;color:var(--text);font-size:1.15rem;width:38px;height:38px;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:.15s}
+.ib:hover{background:var(--soft)}
+.ttl{flex:1;font-weight:700;color:var(--blue);font-size:1rem}
+body.dark .ttl{color:#fff}
+.ttl small{display:block;font-weight:400;color:var(--muted);font-size:.72rem}
+select{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:.82rem;outline:none}
+.chat{flex:1;overflow-y:auto;padding:10px 18px 150px;scroll-behavior:smooth}
+.col{max-width:780px;margin:0 auto}
+/* welcome */
+.hero{text-align:center;padding-top:7vh;animation:up .5s ease}
+.orb{width:68px;height:68px;border-radius:22px;margin:0 auto 18px;background:linear-gradient(135deg,var(--red),var(--blue));display:grid;place-items:center;box-shadow:0 14px 34px rgba(171,5,32,.3)}
+.orb svg{width:34px;height:34px;fill:#fff}
+.hero h1{font-size:2rem;margin:0 0 8px;letter-spacing:-.02em}
+.hero h1 span{background:linear-gradient(90deg,var(--red),var(--blue-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--muted);max-width:540px;margin:0 auto 30px;line-height:1.55}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;text-align:left}
+.cards button{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;cursor:pointer;color:var(--text);font-size:.86rem;line-height:1.4;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.cards button:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:color-mix(in srgb,var(--red) 40%,var(--line))}
+.cards i{font-style:normal;font-size:1.3rem;display:block;margin-bottom:8px}
+.cards b{display:block;margin-bottom:3px;color:var(--blue);font-size:.9rem}
+body.dark .cards b{color:#fff}
+/* messages */
+.msg{display:flex;gap:12px;margin:22px 0;animation:up .3s ease}
+.msg.user{justify-content:flex-end}
+.av{width:34px;height:34px;border-radius:11px;flex-shrink:0;background:linear-gradient(135deg,var(--red),#d4122f);color:#fff;display:grid;place-items:center;font-size:.7rem;font-weight:700}
+.bub{min-width:0;line-height:1.65;font-size:.96rem}
+.msg.user .bub{background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#fff;padding:11px 16px;border-radius:18px 18px 4px 18px;max-width:80%;white-space:pre-wrap;word-wrap:break-word;box-shadow:0 4px 14px rgba(12,35,75,.25)}
+.msg.bot .bub{flex:1;padding-top:5px}
+.bub p{margin:0 0 10px}.bub>*:last-child{margin-bottom:0}
+.bub ul,.bub ol{margin:8px 0 12px;padding-left:22px}.bub li{margin:4px 0}
+.bub a{color:var(--red);text-underline-offset:2px;font-weight:500}
+body.dark .bub a{color:#ff7a8e}
+.bub h1,.bub h2,.bub h3{margin:16px 0 8px;line-height:1.3;color:var(--blue)}
+body.dark .bub h1,body.dark .bub h2,body.dark .bub h3{color:#fff}
+.bub h1{font-size:1.25rem}.bub h2{font-size:1.12rem}.bub h3{font-size:1rem}
+.bub code{background:var(--soft);padding:2px 6px;border-radius:6px;font-size:.88em}
+.bub pre{background:var(--soft);padding:12px;border-radius:12px;overflow-x:auto}.bub pre code{padding:0;background:none}
+.bub table{border-collapse:collapse;display:block;overflow-x:auto;margin:10px 0}
+.bub th,.bub td{border:1px solid var(--line);padding:7px 11px;font-size:.88rem}
+.bub th{background:var(--soft)}
+.bub blockquote{border-left:3px solid var(--red);margin:10px 0;padding:2px 14px;color:var(--muted)}
+.err{background:#fdecee;color:#8a0a1c;border:1px solid #f5c2c9;padding:10px 14px;border-radius:12px;font-size:.9rem}
+body.dark .err{background:#2b1418;color:#ff9aa8;border-color:#552028}
+.err button{margin-left:8px;background:none;border:0;color:inherit;text-decoration:underline;cursor:pointer}
+.acts{margin-top:8px;display:flex;gap:4px;opacity:0;transition:.2s}
+.msg:hover .acts,.acts:focus-within{opacity:1}
+.acts button{background:none;border:0;color:var(--muted);font-size:.75rem;padding:4px 8px;border-radius:7px;cursor:pointer}
+.acts button:hover{background:var(--soft);color:var(--text)}
+.dots span{display:inline-block;width:8px;height:8px;margin:8px 3px 0 0;border-radius:50%;background:var(--red);animation:bn 1.1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes bn{0%,70%,100%{transform:translateY(0);opacity:.5}35%{transform:translateY(-6px);opacity:1}}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* composer */
+.comp{position:absolute;left:0;right:0;bottom:0;padding:30px 18px 14px;background:linear-gradient(transparent,var(--bg) 40%)}
+.box{max-width:780px;margin:0 auto;display:flex;align-items:flex-end;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:8px 8px 8px 18px;box-shadow:var(--shadow);transition:.2s}
+.box:focus-within{border-color:var(--red);box-shadow:0 10px 30px rgba(171,5,32,.15)}
+textarea{flex:1;border:0;outline:0;resize:none;font:inherit;font-size:.96rem;background:none;color:var(--text);max-height:150px;padding:8px 0;line-height:1.45}
+.send{width:42px;height:42px;border-radius:14px;border:0;background:var(--red);color:#fff;cursor:pointer;display:grid;place-items:center;transition:.2s;flex-shrink:0}
+.send:hover:not(:disabled){background:var(--red-d);transform:scale(1.05)}
+.send:disabled{background:var(--line);color:var(--muted);cursor:default}
+.send svg{width:18px;height:18px;fill:currentColor}
+.fine{max-width:780px;margin:8px auto 0;text-align:center;font-size:.72rem;color:var(--muted)}
+.fine b{color:#a06a00}body.dark .fine b{color:#e0a800}
+/* disclaimer modal */
+.ov{position:fixed;inset:0;background:rgba(8,16,34,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;animation:fade .25s}
+.ov.show{display:flex}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);color:var(--text);border-radius:22px;max-width:440px;width:100%;padding:30px 28px 24px;text-align:center;position:relative;box-shadow:0 30px 70px rgba(0,0,0,.35);animation:pop .3s cubic-bezier(.2,1.3,.4,1)}
+@keyframes pop{from{opacity:0;transform:scale(.92) translateY(10px)}to{opacity:1;transform:none}}
+.modal .x{position:absolute;top:12px;right:12px}
+.wi{width:58px;height:58px;border-radius:18px;background:#FFF3CD;color:#a06a00;display:grid;place-items:center;font-size:1.7rem;margin:0 auto 14px}
+.modal h2{margin:0 0 10px;font-size:1.25rem;color:var(--blue)}
+body.dark .modal h2{color:#fff}
+.modal p{margin:0 0 20px;color:var(--muted);line-height:1.6;font-size:.93rem}
+.modal p b{color:var(--text)}
+.ok{background:var(--red);color:#fff;border:0;border-radius:12px;padding:12px 30px;font-weight:600;font-size:.95rem;cursor:pointer;transition:.2s}
+.ok:hover{background:var(--red-d)}
+.scrim{display:none}
+@media(max-width:800px){
+  .sidebar{position:fixed;top:0;bottom:0;left:0;margin-left:0!important;transform:translateX(0);box-shadow:10px 0 30px rgba(0,0,0,.3)}
+  .sidebar.closed{transform:translateX(-105%)}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:25}
+  .sidebar:not(.closed)~.scrim{display:block}
+  .hero h1{font-size:1.6rem}.msg.user .bub{max-width:88%}
+  .ttl small{display:none}
+}
+body.no-copy *:not(textarea){-webkit-user-select:none;user-select:none}
+body.no-copy .bub,body.no-copy .bub *{-webkit-touch-callout:none}
+</style>
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <img src="https://chatbot-img.s3.us-east-2.amazonaws.com/images/ua_logo.png" alt="University of Arizona logo" />
+    <div><b>COM Phoenix</b><small>Student Virtual Assistant</small></div>
+  </div>
+  <button class="new" onclick="newChat()">＋ New chat</button>
+  <h4>Recent chats</h4>
+  <div class="hist" id="hist"><div class="empty">No conversations yet</div></div>
+  <div class="foot">
+    <a href="https://phoenixmed.arizona.edu/" target="_blank" rel="noopener">COM Phoenix website ↗</a>
+    <a href="https://help.intech.arizona.edu/category/200-policies" target="_blank" rel="noopener">Terms of Service ↗</a>
+    <a href="https://www.arizona.edu/information-security-privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
+    <a href="https://chatbot.d2l.arizona.edu/" target="_blank" rel="noopener">Built by UITS-iDX Team ↗</a>
+  </div>
+</aside>
+<div class="scrim" onclick="toggleSide()"></div>
+
+<main class="main">
+  <div class="top">
+    <button class="ib" onclick="toggleSide()" aria-label="Toggle sidebar">☰</button>
+    <div class="ttl">COM Phoenix Virtual Assistant<small>University of Arizona College of Medicine – Phoenix</small></div>
+    <select id="year" aria-label="Curricular year">
+      <option value="">Your year (optional)</option>
+      <option>Year 1</option><option>Year 2</option><option>Year 3</option><option>Year 4</option>
+      <option>3-Year MD Program</option><option>Pathway Scholars</option>
+    </select>
+    <button class="ib" onclick="showDis(true)" aria-label="Show disclaimer" title="Disclaimer">ⓘ</button>
+    <button class="ib" onclick="document.body.classList.toggle('dark')" aria-label="Toggle dark mode" title="Dark mode">◐</button>
+  </div>
+
+  <div class="chat" id="chat"><div class="col" id="col"></div></div>
+
+  <div class="comp">
+    <div class="box">
+      <textarea id="input" rows="1" placeholder="Ask a question in any language…" aria-label="Message"></textarea>
+      <button class="send" id="send" aria-label="Send message" disabled><svg viewBox="0 0 24 24"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2z"/></svg></button>
+    </div>
+    <div class="fine">AI can make mistakes. Please verify the information on resource links. <b>Non-SSL link: do not enter personal information.</b></div>
+  </div>
+</main>
+
+<!-- Disclaimer pop-up -->
+<div class="ov" id="dis" onclick="if(event.target===this)showDis(false)" role="dialog" aria-modal="true" aria-labelledby="dtitle">
+  <div class="modal">
+    <button class="ib x" onclick="showDis(false)" aria-label="Close">✕</button>
+    <div class="wi">⚠</div>
+    <h2 id="dtitle">Before you begin</h2>
+    <p>This is a <b>non-protected, non-SSL link</b>.<br>Please <b>do not enter any personal information</b>, and <b>do not share this link</b> with others.</p>
+    <button class="ok" onclick="showDis(false)">I understand</button>
+  </div>
+</div>
+
+<script>
+/* ===== TOGGLES: set true / false ===== */
+const DISABLE_COPY  = false;   // blocks copy, cut, text selection, right-click and hides Copy buttons
+const DISABLE_PASTE = false;   // blocks paste and drag-and-drop text into the chat box
+
+/* ===== DEMO MODE: backend fully disconnected, sample responses only ===== */
+const INACTIVE = [];
+
+const CARDS = [
+  ['🧭','New student checklist','What do I need to complete as a new student?'],
+  ['💻','Technology','How do I set up my NetID, UA email and VPN?'],
+  ['📋','Academic policies','How do I submit an absence request?'],
+  ['📚','Curriculum & exams','Where can I find Step exam resources?'],
+  ['🔬','Research','How do I find research opportunities and mentors?'],
+  ['🚌','Campus & parking','Where do I get a parking permit?'],
+  ['💚','Health & wellness','What counseling and wellness services are available?'],
+  ['🏛️','Student services','Who do I contact for financial aid or the Registrar?']
+];
+
+let chats = [], cur = null, busy = false, dead = false;
+const $ = id => document.getElementById(id);
+const col = $('col'), chat = $('chat'), input = $('input'), sendBtn = $('send');
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ===== Markdown ===== */
+function md(t){
+  t = t.replace(/【.*?】/g,'');
+  let html = (window.marked && window.DOMPurify)
+    ? DOMPurify.sanitize(marked.parse(t), {ADD_ATTR:['target']})
+    : esc(t).replace(/\n/g,'<br>');
+  const d = document.createElement('div'); d.innerHTML = html;
+  d.querySelectorAll('a').forEach(a => {a.target='_blank'; a.rel='noopener noreferrer'});
+  return d.innerHTML;
+}
+
+/* ===== Demo responder (no network calls) ===== */
+const SAMPLES = [
+  [/checklist|new student|onboard/i,
+`Welcome to COM-Phoenix! Here is a **sample** new student checklist:
+
+1. **Activate your NetID** and UA email
+2. **Complete required onboarding modules** and immunization records
+3. **Set up Examplify and D2L** on your laptop
+4. **Review the academic calendar** for your curricular year
+5. **Meet with Student Affairs** to ask any questions
+
+Official resource: [COM-Phoenix website](https://phoenixmed.arizona.edu/)
+
+*This is a demo response.*`],
+  [/netid|email|vpn|wifi|wi-fi|zoom|technology|tech/i,
+`Here is a **sample** tech setup guide:
+
+- **NetID:** your login for UA systems
+- **UA email:** accessed through Microsoft 365
+- **VPN:** needed to reach some resources off campus
+- **Exam software:** Examplify / ExamSoft for exams
+
+If something isn't working, contact IT support. See the [COM-Phoenix website](https://phoenixmed.arizona.edu/) for the right office.
+
+*This is a demo response.*`],
+  [/absence|attendance|makeup|excused/i,
+`To request an absence, a **sample** process looks like this:
+
+1. Review the attendance policy for your year
+2. Submit the absence request form before the event if possible
+3. Notify the course or clerkship director
+4. Confirm the outcome with Student Affairs
+
+> Policies can differ by curricular year. Select your year at the top for tailored guidance.
+
+*This is a demo response.*`],
+  [/step|shelf|nbme|exam/i,
+`Here are some **sample** exam resources:
+
+- **Step 1 / Step 2:** timeline, registration, and study planning
+- **Shelf exams (NBME):** schedules for clerkship years
+- **Block exams:** exam policies and make-up information
+
+Ask me about a specific exam and I'll point you to the right office.
+
+*This is a demo response.*`],
+  [/research|mentor|irb|citi|grant|scholar/i,
+`For research, a **sample** starting point:
+
+1. **Explore opportunities** and identify potential mentors
+2. **Complete CITI training** if working with human subjects
+3. **Check IRB requirements** before starting
+4. **Look into funding:** scholarships, grants, and conference support
+
+*This is a demo response.*`],
+  [/park|permit|shuttle|transport|campus|building/i,
+`Parking and transportation, **sample** info:
+
+- **Parking permits:** apply through the campus parking office
+- **Shuttle services:** check schedules for routes
+- **Campus maps:** locate buildings and student spaces
+
+*This is a demo response.*`],
+  [/counsel|wellness|mental|health|stress|disab|accommodat/i,
+`Health and wellness resources, **sample** list:
+
+- **Counseling and mental health support**
+- **Student healthcare services**
+- **Wellness and recreation programs**
+- **Accommodations** through the Disability Resource Center
+
+If you need urgent help, please contact campus emergency or crisis resources right away.
+
+*This is a demo response.*`],
+  [/financial|aid|registrar|tuition|loan|affairs/i,
+`Student services, **sample** guide:
+
+| Need | Office |
+|---|---|
+| Financial aid | Financial Aid |
+| Records and enrollment | Registrar |
+| Academic or personal support | Student Affairs |
+
+*This is a demo response.*`]
+];
+const FALLBACK = `Thanks for your question! This is a **demo response**.
+
+In the live version, I would search official COM-Phoenix and University of Arizona resources and give you:
+
+- A short, clear answer
+- The **next steps** to take
+- A link to the **official resource**
+
+Try asking about the new student checklist, tech setup, absence requests, Step exams, research, parking, or wellness.`;
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function getThread(){ return 'demo-thread'; }
+
+async function streamReply(thread, message, onChunk){
+  const hit = SAMPLES.find(s => s[0].test(message));
+  const reply = hit ? hit[1] : FALLBACK;
+  await sleep(700);                         // "thinking" delay
+  for (const tok of reply.split(/(?<=\s)/)) { // stream word by word
+    onChunk(tok);
+    await sleep(18 + Math.random() * 22);
+  }
+}
+
+/* ===== UI ===== */
+function welcome(){
+  col.innerHTML = `<div class="hero">
+    <div class="orb"><svg viewBox="0 0 29 28"><path d="M25.7 8.25C20.9 7.26 20.9 5.39 20.3.78c-.04-.35-.5-.35-.54 0-.55 4.61-.68 6.48-6.03 7.47-.36.07-.36.7 0 1.77 5.35 1.01 5.48 3.03 6.03 8.85.03.36.51.36.55 0 .54-5.83.6-7.85 5.34-8.86.35-.07.35-.7 0-.77zM27.9 15.37c-2.36-.51-2.39-1.48-2.65-3.89-.02-.17-.25-.17-.27 0-.27 2.41-.34 3.38-3 3.89-.18.03-.18.34 0 .38 2.64.52 2.73 1.54 3 4.53.02.18.26.18.27 0 .26-3.04.3-4.08 2.65-4.6.17-.04.17-.34 0-.31z"/><path d="M21 19.1v3.35H6.07l-3.74 3.73V7.52h10.62c-.27.46-.35.95-.35 1.25 0 .16.02.38.09.62H4.2v12.25l1.07-1.05h13.86v-1.77c.36.24.78.37 1.24.37.22 0 .43-.03.63-.09z"/></svg></div>
+    <h1>Hi! How can I <span>help you today?</span></h1>
+    <p>Ask me about the new student checklist, academic resources, campus resources, research, tech support, and more.</p>
+    <div class="cards">${CARDS.map(c=>`<button data-q="${esc(c[2])}"><i>${c[0]}</i><b>${c[1]}</b>${esc(c[2])}</button>`).join('')}</div>
+  </div>`;
+  col.querySelectorAll('.cards button').forEach(b => b.onclick = () => send(b.dataset.q));
+}
+
+function addMsg(role, html, raw){
+  const el = document.createElement('div');
+  el.className = 'msg ' + role;
+  el.innerHTML = role === 'user'
+    ? `<div class="bub">${html}</div>`
+    : `<div class="av">UA</div><div class="bub">${html}</div>`;
+  if (raw !== undefined) el._raw = raw;
+  col.appendChild(el);
+  chat.scrollTop = chat.scrollHeight;
+  return el;
+}
+
+function addActions(el){
+  if (DISABLE_COPY) return;
+  const a = document.createElement('div'); a.className = 'acts';
+  a.innerHTML = '<button>📋 Copy</button>';
+  a.firstChild.onclick = e => {
+    navigator.clipboard.writeText(el.querySelector('.bub').innerText.replace('📋 Copy','').trim());
+    e.target.textContent = '✓ Copied'; setTimeout(() => e.target.textContent = '📋 Copy', 1300);
+  };
+  el.querySelector('.bub').appendChild(a);
+}
+
+function showErr(el, e){
+  const msg = (e && e.msg) || 'Chatbot is currently offline.';
+  el.querySelector('.bub').innerHTML = `<div class="err">${esc(msg)}<button onclick="location.reload()">Refresh</button></div>`;
+  if (e && INACTIVE.includes(e.code)) {
+    dead = true; input.disabled = true; sendBtn.disabled = true;
+    input.placeholder = 'Assistant is currently unavailable';
+  }
+}
+
+async function send(text){
+  text = (text || '').trim();
+  if (!text || busy || dead) return;
+  if (!cur) { cur = {id:Date.now(), title:text.slice(0,42), thread:null, msgs:[]}; chats.unshift(cur); col.innerHTML = ''; }
+  busy = true; sendBtn.disabled = true;
+  addMsg('user', esc(text));
+  cur.msgs.push({role:'user', text});
+  input.value = ''; autosize();
+  const bot = addMsg('bot', '<div class="dots"><span></span><span></span><span></span></div>');
+  const bub = bot.querySelector('.bub');
+  const yr = $('year').value;
+  const payload = yr ? `(I am a student in ${yr}.) ${text}` : text;
+  let full = '', queued = false;
+  const paint = () => { queued = false; bub.innerHTML = md(full); chat.scrollTop = chat.scrollHeight; };
+  try {
+    if (!cur.thread) cur.thread = await getThread();
+    await streamReply(cur.thread, payload, chunk => {
+      full += chunk;
+      if (!queued) { queued = true; requestAnimationFrame(paint); }
+    });
+    paint();
+    if (!full.trim()) throw {msg:'Sorry, I did not get a response. Please try again.'};
+    cur.msgs.push({role:'bot', text:full});
+    addActions(bot);
+  } catch (e) {
+    console.error(e);
+    showErr(bot, e);
+  }
+  busy = false; sendBtn.disabled = !input.value.trim() || dead;
+  renderHist();
+}
+
+function newChat(){
+  if (busy) return;
+  cur = null; welcome(); renderHist();
+  if (innerWidth <= 800) $('sidebar').classList.add('closed');
+}
+function openChat(id){
+  if (busy) return;
+  cur = chats.find(c => c.id === id); col.innerHTML = '';
+  cur.msgs.forEach(m => {
+    const el = addMsg(m.role, m.role === 'user' ? esc(m.text) : md(m.text));
+    if (m.role === 'bot') addActions(el);
+  });
+  renderHist();
+  if (innerWidth <= 800) $('sidebar').classList.add('closed');
+}
+function renderHist(){
+  $('hist').innerHTML = chats.length ? '' : '<div class="empty">No conversations yet</div>';
+  chats.forEach(c => {
+    const b = document.createElement('button');
+    b.textContent = c.title; b.title = c.title;
+    if (cur && cur.id === c.id) b.className = 'active';
+    b.onclick = () => openChat(c.id);
+    $('hist').appendChild(b);
+  });
+}
+function toggleSide(){ $('sidebar').classList.toggle('closed'); }
+function showDis(v){ $('dis').classList.toggle('show', v); }
+function autosize(){ input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 150) + 'px'; }
+
+input.addEventListener('input', () => { autosize(); sendBtn.disabled = busy || dead || !input.value.trim(); });
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input.value); } });
+sendBtn.onclick = () => send(input.value);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') showDis(false); });
+
+if (DISABLE_COPY) {
+  document.body.classList.add('no-copy');
+  ['copy','cut','dragstart'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
+}
+if (DISABLE_PASTE) {
+  ['paste','drop'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
+}
+if (DISABLE_COPY || DISABLE_PASTE) {
+  document.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+if (innerWidth <= 800) $('sidebar').classList.add('closed');
+welcome();
+showDis(true);   // disclaimer pop-up on load
+</script>
+</body>
+</html>
